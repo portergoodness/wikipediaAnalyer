@@ -1,3 +1,21 @@
+#intellij project files
 /.idea
+
+#eclipse project files
+/.settings
+.cache
+.classpath
+.project
+/.target
+
+#sbt target directories
 /**/target
+
+#logs
 /logs
+
+#non-commited libraries
+/bin/
+
+#OS-X Files
+.DS_Store
