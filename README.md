@@ -5,8 +5,8 @@ A web application that can view wikipedia content and apply natural language too
 
 Possible tools to use could include:
 
-*Sentence Splitters
-*Event Detection
-*Geo Detection
-*Temporal Occurance Detection
-*Parse Trees
+* Sentence Splitters
+* Event Detection
+* Geo Detection
+* Temporal Occurance Detection
+* Parse Trees
