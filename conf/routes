@@ -5,8 +5,10 @@
 # Home page
 GET     /                           controllers.Application.index
 
-# Test endpoint - Remove when done
-GET		/test						controllers.Application.testEndpoint(title:String)
+# Wikipedia article endpoints
+GET     /wiki                       controllers.ArticleController.search(title:String)
+GET     /wiki/:id/content           controllers.ArticleController.getContent(id)
+GET     /wiki/:id/disambiguation    controllers.ArticleController.getDisambiguation(id)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

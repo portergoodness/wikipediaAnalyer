@@ -7,6 +7,8 @@
 .classpath
 .project
 /.target
+/.worksheet
+*.sc
 
 #sbt target directories
 /**/target

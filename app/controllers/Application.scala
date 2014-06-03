@@ -11,11 +11,5 @@ object Application extends Controller {
     Ok(views.html.index("Your new application is ready."))
   }
   
-  def testEndpoint(title: String) = Action.async {
-	  WikiRetriever().fetchMarkupFromWikipedia(title)
-		.map { response =>
-		Ok("Got a response: "+ response)
-	  }
-  }
 
 }

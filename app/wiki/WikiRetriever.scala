@@ -39,7 +39,7 @@ case class WikiRetriever(userAgentDescription: String, wikiUrl: String, queryPar
 	   * 
 	   * @param title An article title to search for
 	   */
-	def fetchMarkupFromWikipedia(title: String): Future[String] = {
+	def fetchArticleFromWikipedia(title: String): Future[Option[WikiArticle]] = {
 	  
 	  val queryParamsWithTitle = queryParams :+ ("titles", title)
 
@@ -49,9 +49,7 @@ case class WikiRetriever(userAgentDescription: String, wikiUrl: String, queryPar
 			.withRequestTimeout(timeout)
 			.get()
 			.map { response =>
-				val responseStr = response.json.toString
-				//TODO: drop the rest of the json and only keep the content
-				responseStr
+				WikiArticle(response.json)
 			}
 	}
 }
