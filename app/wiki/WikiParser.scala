@@ -22,11 +22,11 @@ class WikiParser extends JavaTokenParsers {
   
 //  def articleParts: Parser[List[WikiPart]] = rep1(articleContent)
   
-  def articleContent: Parser[WikiPart] = articleText | leftBrace | leftBracket
+  def articleContent: Parser[WikiPart] = articleText | leftBrace | leftBracket | headerStart
   
   def articleText: Parser[WikiText] = rep1(articleTextChar) ^^ (a => WikiText(a.mkString))
   
-  def articleTextChar: Parser[String] = """[\sa-zA-Z0-9\(\)\.,!\?:;_~'"#\^\$@%&\-\+\*\|<>\()=\\/\u00A1-\uFFFF]""".r
+  def articleTextChar: Parser[String] = """[\sa-zA-Z0-9\(\)\.,!\?:;_~'"#\^\$@%&\-\+\*\|<>\()\\/\u00A1-\uFFFF]""".r
   
   
   //****** Special - {{ Surrounded by double braces }} ******
@@ -49,6 +49,18 @@ class WikiParser extends JavaTokenParsers {
   def insideBrackets: Parser[WikiPart] = link | contentInBrackets
   def contentInBrackets: Parser[WikiPart] = articleText | leftBrace
   def link: Parser[WikiLink] = "[" ~> article <~ "]" ^^ WikiLink
+  
+  //****** Header - == Surrounded by double equals == ******
+  def headerStart: Parser[WikiPart] = "=" ~> insideHeader ^^ {
+    case content: WikiText => WikiText("="+content.nlContent)
+    case content: WikiHeader => content
+    case content: Any => content
+  }
+  def insideHeader: Parser[WikiPart] = header | contentAfterSingleEquals
+  def contentAfterSingleEquals: Parser[WikiPart] = articleContent
+  def header: Parser[WikiHeader] = "=" ~> articleText <~ "==" ^^ WikiHeader
+  //def headerFinish: Parser[Any] = repN(2, equals)
+  //def equals: Parser[String] = "="
   
   
   //****** Parser ******
@@ -113,5 +125,11 @@ case class WikiText(content: String) extends WikiPart {
   def rawContent = content
   def nlContent = content
   def children = List()
+  def setChildren(children: List[WikiPart]) = this
+}
+case class WikiHeader(content: WikiText) extends WikiPart {
+  def rawContent = "==" + content.rawContent + "=="
+  def nlContent = content.nlContent
+  def children = content.children
   def setChildren(children: List[WikiPart]) = this
 }
