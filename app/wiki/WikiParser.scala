@@ -29,32 +29,62 @@ class WikiParser extends JavaTokenParsers {
   //****** Special - {{ Surrounded by double braces }} ******
   def leftBrace(charsToNotParse: List[String]): Parser[WikiPart] = "{" ~> insideBraces(charsToNotParse) ^^ {
     case content: WikiSpecial => content
-    case content: Any => {
-      println("leftbrace text: "+content.rawContent)
-      WikiText("{"+content.rawContent)}
+    case content: Any => content.prependPart(WikiText("{"))
   }
   def insideBraces(charsToNotParse: List[String]): Parser[WikiPart] = special(charsToNotParse) | articleContent(charsToNotParse)
-  def special(charsToNotParse: List[String]): Parser[WikiSpecial] = "{" ~> article(charsToNotParse :+ """\}""") <~ "}}" ^^ WikiSpecial
+  //def special(charsToNotParse: List[String]): Parser[WikiSpecial] = "{" ~> article(charsToNotParse :+ """\}""") <~ "}}" ^^ WikiSpecial
+  def special(charsToNotParse: List[String]): Parser[WikiSpecial] = "{" ~> specialContent(charsToNotParse :+ """\}""") ^^ (a => WikiSpecial(a.dropRight(2)))
+  def specialContent(charsToNotParse: List[String]): Parser[List[WikiPart]] = article(charsToNotParse) ~ rightBrace ~ endOfSpecial(charsToNotParse) ^^ {
+    case firstContent ~ brace ~ endContent => (firstContent :+ brace) ++ endContent
+  }
+  def endOfSpecial(charsToNotParse: List[String]): Parser[List[WikiPart]] = finalCloseBrace(charsToNotParse) | specialContent(charsToNotParse)
+  def finalCloseBrace(charsToNotParse: List[String]): Parser[List[WikiPart]] = rightBrace ^^ (a => List(a))
+  def rightBrace: Parser[WikiText] = "}" ^^ WikiText
   
   
   //****** Link - [[ Surrounded by double brackets ]] ******
   def leftBracket(charsToNotParse: List[String]): Parser[WikiPart] = "[" ~> insideBrackets(charsToNotParse) ^^ {
-    case content: WikiText => WikiText("["+content.rawContent)
-    case content: Any => content
+    case content: WikiLink =>  content
+    case content: Any => content.prependPart(WikiText("["))
   }
   def insideBrackets(charsToNotParse: List[String]): Parser[WikiPart] = link(charsToNotParse) | articleContent(charsToNotParse)
-  def link(charsToNotParse: List[String]): Parser[WikiLink] = "[" ~> article(charsToNotParse :+ """\]""") <~ "]]" ^^ WikiLink
+  //def link(charsToNotParse: List[String]): Parser[WikiLink] = "[" ~> article(charsToNotParse :+ """\]""") <~ "]]" ^^ WikiLink
+  def link(charsToNotParse: List[String]): Parser[WikiLink] = "[" ~> linkContent(charsToNotParse :+ """\]""") ^^ (a => WikiLink(a.dropRight(2)))
+  def linkContent(charsToNotParse: List[String]): Parser[List[WikiPart]] = article(charsToNotParse) ~ rightBracket ~ endOfLink(charsToNotParse) ^^ {
+    case firstContent ~ bracket ~ endContent => (firstContent :+ bracket) ++ endContent
+  }
+  def endOfLink(charsToNotParse: List[String]): Parser[List[WikiPart]] = finalCloseBracket(charsToNotParse) | linkContent(charsToNotParse)
+  def finalCloseBracket(charsToNotParse: List[String]): Parser[List[WikiPart]] = rightBracket ^^ (a => List(a))
+  def rightBracket: Parser[WikiText] = "]" ^^ WikiText
   
   
   //****** Header - == Surrounded by double equals == ******
   def headerStart(charsToNotParse: List[String]): Parser[WikiPart] = "=" ~> insideHeader(charsToNotParse) ^^ {
-    case content: WikiText => WikiText("="+content.nlContent)
     case content: WikiHeader => content
-    case content: Any => content
+    case content: Any => content.prependPart(WikiText("="))
   }
   def insideHeader(charsToNotParse: List[String]): Parser[WikiPart] = header(charsToNotParse) | contentAfterSingleEquals(charsToNotParse)
   def contentAfterSingleEquals(charsToNotParse: List[String]): Parser[WikiPart] = articleContent(charsToNotParse)
   def header(charsToNotParse: List[String]): Parser[WikiHeader] = "=" ~> articleText(charsToNotParse) <~ "==" ^^ WikiHeader
+  
+  
+  //****** Comment - <!-- XML Comment --> ******
+//  def leftAngleBracket(charsToNotParse: List[String]): Parser[WikiPart] = "<" ~> insideAngleBracket(charsToNotParse) ^^ {
+//    case content: WikiComment => content
+//    case content: Any => content.prependPart(WikiText("<"))
+//  }
+//  def insideAngleBracket(charsToNotParse: List[String]): Parser[WikiPart] = angleBang(charsToNotParse) | articleContent(charsToNotParse)
+//  def angleBang(charsToNotParse: List[String]): Parser[WikiPart] = "!" ~> insideAngleBang(charsToNotParse) ^^ {
+//    case content: WikiComment => content
+//    case content: Any => content.prependPart(WikiText("!"))
+//  }
+//  def insideAngleBang(charsToNotParse: List[String]): Parser[WikiPart] = angleBangDash(charsToNotParse) | articleContent(charsToNotParse)
+//  def angleBangDash(charsToNotParse: List[String]): Parser[WikiPart] = "-" ~> insideAngleBangDash(charsToNotParse) | articleContent(charsToNotParse) ^^ {
+//    case content: WikiComment => content
+//    case content: Any => content.prependPart(WikiText("-"))
+//  }
+//  def insideAngleBangDash(charsToNotParse: List[String]): Parser[WikiPart] = comment(charsToNotParse) | articleContent(charsToNotParse)
+//  def comment(charsToNotParse: List[String]): Parser[WikiComment] = "".r ^^ WikiComment
   
   
   //****** Parser ******
@@ -100,6 +130,8 @@ sealed trait WikiPart {
   def nlContent: String
   def children: List[WikiPart]
   def setChildren(children: List[WikiPart]): WikiPart
+  def prependPart(part: WikiPart): WikiPart
+  def appendPart(part: WikiPart): WikiPart
 }
 
 case class WikiSpecial(content: List[WikiPart]) extends WikiPart {
@@ -107,22 +139,38 @@ case class WikiSpecial(content: List[WikiPart]) extends WikiPart {
   def nlContent = ""
   def children = content
   def setChildren(children: List[WikiPart]) = this.copy(content = children)
+  def prependPart(part: WikiPart) = this.copy(content = part +: content)
+  def appendPart(part: WikiPart) = this.copy(content = content :+ part)
 }
 case class WikiLink(content: List[WikiPart]) extends WikiPart {
   def rawContent = content.map(a => a.rawContent).mkString("[[", "", "]]")
   def nlContent = content.map(a => a.nlContent).mkString
   def children = content
   def setChildren(children: List[WikiPart]) = this.copy(content = children)
+  def prependPart(part: WikiPart) = this.copy(content = part +: content)
+  def appendPart(part: WikiPart) = this.copy(content = content :+ part)
 }
 case class WikiText(content: String) extends WikiPart {
   def rawContent = content
   def nlContent = content
   def children = List()
   def setChildren(children: List[WikiPart]) = this
+  def prependPart(part: WikiPart) = this.copy(content = part.nlContent + content)
+  def appendPart(part: WikiPart) = this.copy(content = content + part.nlContent)
 }
 case class WikiHeader(content: WikiText) extends WikiPart {
   def rawContent = "==" + content.rawContent + "=="
   def nlContent = content.nlContent
   def children = content.children
   def setChildren(children: List[WikiPart]) = this
+  def prependPart(part: WikiPart) = this.copy(content = content.prependPart(part))
+  def appendPart(part: WikiPart) = this.copy(content = content.appendPart(part))
+}
+case class WikiComment(content: WikiText) extends WikiPart {
+  def rawContent = "<!--" + content.rawContent + "-->"
+  def nlContent = ""
+  def children = content.children
+  def setChildren(children: List[WikiPart]) = this
+  def prependPart(part: WikiPart) = this.copy(content = content.prependPart(part))
+  def appendPart(part: WikiPart) = this.copy(content = content.appendPart(part))
 }

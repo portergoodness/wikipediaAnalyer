@@ -59,6 +59,18 @@ class WikiParserSpec extends Specification {
       
     }
     
+    "only close special on double braces" in {
+      val parseInput = "{{This is a {special} test} you see}} After Special"
+      val expectedSpecialRaw = "{{This is a {special} test} you see}}"
+      val parseResults = WikiParser().parse(parseInput)
+      parseResults.isDefined must beTrue
+      parseResults.get.size must equalTo(2)
+      parseResults.get(1).nlContent must equalTo(" After Special")
+      val special = parseResults.get(0)
+      special.rawContent must equalTo(expectedSpecialRaw)
+      
+    }
+    
     "parse single brackets as text" in {
       val parseInput = "This is a test. [text]"
       val parseResults = WikiParser().parse(parseInput)
@@ -89,6 +101,18 @@ class WikiParserSpec extends Specification {
       val special = parseResults.get(1)
       special.children.size must equalTo(1)
       special.children.head.nlContent must equalTo("[text")
+      
+    }
+    
+    "only close link on double brackets" in {
+      val parseInput = "[[This is a [special] test} you see]] After Link"
+      val expectedLinkRaw = "[[This is a [special] test} you see]]"
+      val parseResults = WikiParser().parse(parseInput)
+      parseResults.isDefined must beTrue
+      parseResults.get.size must equalTo(2)
+      parseResults.get(1).nlContent must equalTo(" After Link")
+      val link = parseResults.get(0)
+      link.rawContent must equalTo(expectedLinkRaw)
       
     }
     
