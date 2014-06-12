@@ -18,10 +18,12 @@ class WikiParser extends JavaTokenParsers {
   
   override val skipWhitespace = false
   
+  //TODO: Refactor charsToNotParse to be a Set instead of a List
   def article(charsToNotParse: List[String] = List()): Parser[List[WikiPart]] = rep(articleContent(charsToNotParse))
   def articleContent(charsToNotParse: List[String]): Parser[WikiPart] = articleText(charsToNotParse) | leftBrace(charsToNotParse) | leftBracket(charsToNotParse) | headerStart(charsToNotParse)
   def articleText(charsToNotParse: List[String]): Parser[WikiText] = rep1(articleTextChar(charsToNotParse)) ^^ (a => WikiText(a.mkString))
   val acceptableCharacterPattern = """\sa-zA-Z0-9\(\)\.,!\?:;_~'"#\^\$@%&\-\+\*\|<>\\"""
+    //TODO: Add equals, > and - to conditionally acceptable
   val conditiallyAcceptableCharacters = List("""\]""","""\}""")
   def articleTextChar(charsToNotParse: List[String]): Parser[String] = ("""["""+acceptableCharacterPattern+conditiallyAcceptableCharacters.filter(a => !charsToNotParse.contains(a)).mkString+"""]""").r
 
@@ -32,7 +34,6 @@ class WikiParser extends JavaTokenParsers {
     case content: Any => content.prependPart(WikiText("{"))
   }
   def insideBraces(charsToNotParse: List[String]): Parser[WikiPart] = special(charsToNotParse) | articleContent(charsToNotParse)
-  //def special(charsToNotParse: List[String]): Parser[WikiSpecial] = "{" ~> article(charsToNotParse :+ """\}""") <~ "}}" ^^ WikiSpecial
   def special(charsToNotParse: List[String]): Parser[WikiSpecial] = "{" ~> specialContent(charsToNotParse :+ """\}""") ^^ (a => WikiSpecial(a.dropRight(2)))
   def specialContent(charsToNotParse: List[String]): Parser[List[WikiPart]] = article(charsToNotParse) ~ rightBrace ~ endOfSpecial(charsToNotParse) ^^ {
     case firstContent ~ brace ~ endContent => (firstContent :+ brace) ++ endContent
@@ -48,7 +49,6 @@ class WikiParser extends JavaTokenParsers {
     case content: Any => content.prependPart(WikiText("["))
   }
   def insideBrackets(charsToNotParse: List[String]): Parser[WikiPart] = link(charsToNotParse) | articleContent(charsToNotParse)
-  //def link(charsToNotParse: List[String]): Parser[WikiLink] = "[" ~> article(charsToNotParse :+ """\]""") <~ "]]" ^^ WikiLink
   def link(charsToNotParse: List[String]): Parser[WikiLink] = "[" ~> linkContent(charsToNotParse :+ """\]""") ^^ (a => WikiLink(a.dropRight(2)))
   def linkContent(charsToNotParse: List[String]): Parser[List[WikiPart]] = article(charsToNotParse) ~ rightBracket ~ endOfLink(charsToNotParse) ^^ {
     case firstContent ~ bracket ~ endContent => (firstContent :+ bracket) ++ endContent
@@ -59,6 +59,7 @@ class WikiParser extends JavaTokenParsers {
   
   
   //****** Header - == Surrounded by double equals == ******
+  //TODO: Add tests to header
   def headerStart(charsToNotParse: List[String]): Parser[WikiPart] = "=" ~> insideHeader(charsToNotParse) ^^ {
     case content: WikiHeader => content
     case content: Any => content.prependPart(WikiText("="))
