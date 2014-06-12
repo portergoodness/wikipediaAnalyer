@@ -51,11 +51,11 @@ class WikiParserSpec extends Specification {
       val expectedSpecialRaw = "{{{text}}}"
       val parseResults = WikiParser().parse(parseInput)
       parseResults.isDefined must beTrue
-      parseResults.get.size must equalTo(2)
+      parseResults.get.size must equalTo(3)
       parseResults.get.head.nlContent must equalTo(expectedInput)
       val special = parseResults.get(1)
       special.children.size must equalTo(1)
-      special.children.head.nlContent must equalTo("{text}")
+      special.children.head.nlContent must equalTo("{text")
       
     }
     
@@ -84,11 +84,11 @@ class WikiParserSpec extends Specification {
       val expectedSpecialRaw = "[[[text]]]"
       val parseResults = WikiParser().parse(parseInput)
       parseResults.isDefined must beTrue
-      parseResults.get.size must equalTo(2)
+      parseResults.get.size must equalTo(3)
       parseResults.get.head.nlContent must equalTo(expectedInput)
       val special = parseResults.get(1)
       special.children.size must equalTo(1)
-      special.children.head.nlContent must equalTo("[text]")
+      special.children.head.nlContent must equalTo("[text")
       
     }
     
