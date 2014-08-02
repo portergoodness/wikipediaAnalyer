@@ -21,7 +21,6 @@ class WikiParserSpec extends Specification {
     "parse plain text" in {
       val parseInput = "This is a test. Very Exciting! How are you? I hope that your (truly) understand; however boring it might be.  Good night, and comma..."
       val parseResults = WikiParser().parse(parseInput)
-//      parseResults.
       parseResults.isDefined must beTrue
       parseResults.get.size must equalTo(1)
       parseResults.get.head.nlContent must equalTo(parseInput)
