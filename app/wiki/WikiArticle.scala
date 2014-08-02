@@ -1,6 +1,7 @@
 package wiki
 
 import play.api.libs.json.JsValue
+import wiki.parser.WikiParser
 
 object WikiArticle {
   
@@ -23,4 +24,13 @@ object WikiArticle {
 
 }
 
-case class WikiArticle(plainText: String, wikiMarkup: String, id: String)
+
+case class WikiArticle(plainText: String, wikiMarkup: String, id: String) {
+  
+
+  protected val parser = new WikiParser()
+  
+  protected val parts = parser.parse(wikiMarkup)
+  
+  def articleContent = parser.parse(wikiMarkup)
+}
