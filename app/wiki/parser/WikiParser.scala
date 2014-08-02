@@ -30,26 +30,4 @@ class WikiParser extends WikiParsers with WikiTokens with WikiParts {
       None
     }
   }
-  
-//  def mergeSimilarParts(parts: List[WikiPart], previousText: Option[WikiText] = None): List[WikiPart] = {
-//    
-//    if (parts.isEmpty) {
-//      List()
-//    } else {
-//      if (parts.head.isInstanceOf[WikiText]) {
-//        println(parts.head)
-//        val textHead = parts.head.nlContent
-//        val mergedText = previousText match {
-//          case Some(text) => new WikiText(textHead + text)
-//          case None => parts.head.asInstanceOf[WikiText]
-//        }
-//        mergeSimilarParts(parts.tail, Some(mergedText))
-//      } else {
-//        previousText match {
-//          case Some(text) => List(text, parts.head) ++ mergeSimilarParts(parts.tail, None)
-//          case None => parts.head +: mergeSimilarParts(parts.tail, None)
-//        }
-//      }
-//    }
-//  }
 }
