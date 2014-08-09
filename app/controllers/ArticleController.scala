@@ -32,6 +32,7 @@ object ArticleController extends Controller {
     	            "title" -> title,
     	            "id" -> article.id
     	        )))
+    	        
     	  }
     	  case None => NotFound("No article was found for title: "+title)
     	}
