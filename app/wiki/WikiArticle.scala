@@ -30,7 +30,10 @@ case class WikiArticle(plainText: String, wikiMarkup: String, id: String) {
 
   protected val parser = new WikiParser()
   
-  protected val parts = parser.parse(wikiMarkup)
+  protected val partsOption = parser.parse(wikiMarkup)
   
-  def articleContent = parser.parse(wikiMarkup)
+  def articleContent = partsOption match {
+    case Some(parts) => parts.map(p => p.nlContent).mkString
+    case None => ""
+  }
 }

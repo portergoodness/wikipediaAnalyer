@@ -72,7 +72,7 @@ trait WikiTokens extends Tokens {
    * Generator for WikiScanner.  Call this method to turn a string into a WikiScanner of tokens
    */
   def tokenize(input: String):  WikiScanner = {
-    val tokens: Seq[WikiToken] = tokenizeString(input, Seq())
+    val tokens: Seq[WikiToken] = tokenizeString(input)
     new WikiScanner(tokens, 0, 0, input)
   }
   
@@ -91,33 +91,46 @@ trait WikiTokens extends Tokens {
       "-->" -> new CloseComment)
   
   /**
-   * This method is called recursively and splits a finite sequence of characters into 
+   * This method is called iteratively cycles through the input sequence and splits a finite sequence of characters into 
    * a sequence of WikiToken
    */
-    def tokenizeString(input: Seq[Char], state: Seq[Char]): Seq[WikiToken] = {
+    def tokenizeString(input: Seq[Char]): Seq[WikiToken] = {
+    var state = collection.mutable.Seq[Char]()
+    var tokens = collection.mutable.Seq[WikiToken]()
     
-    if (input.isEmpty) {
-      if (state.isEmpty) {
-        Seq()
-      } else {
-        Seq(new TextContent(state.mkString))
-      }
-    }
-    else {
+    var index = 0
+    
+    while (index < input.size) {
+      // each loop we move down the input, character by character, looking for non-text tokens
+      state :+= input(index)
+      index = index+1
+      val tokenToMatchStr = state.mkString
       
-      val tokenToMatch = state :+ input.head
-      val tokenToMatchStr = tokenToMatch.mkString
-      val matchingTokens = knownTokens.filter(kt => kt._1.startsWith(tokenToMatch))
+      val matchingTokens = knownTokens.filter(kt => kt._1.startsWith(state))
       
       if (matchingTokens.isEmpty) {
-        new TextContent(tokenToMatchStr) +: tokenizeString(input.tail, Seq())
+        // existing state does not match any known token.  It must be a text token
+        tokens :+= new TextContent(tokenToMatchStr)
+        state = collection.mutable.Seq[Char]() //reset state
       } else {
         matchingTokens.find(mt => mt._1.equals(tokenToMatchStr)) match {
-          case Some(matchedToken) => matchedToken._2 +: tokenizeString(input.tail, Seq())
-          case None => tokenizeString(input.tail, tokenToMatch)
+          case Some(matchedToken) => {
+            // these are exact matches meaning we have found a special token
+            tokens :+= matchedToken._2
+            state = collection.mutable.Seq[Char]()  //reset state
+          }
+          case None => {
+            // the current state matches part of one or more tokens, but not exactly, keep adding to state
+            if (index >= input.size && !state.isEmpty) {
+              // we are at the end, create a token with the current state if it is not empty
+              tokens :+= new TextContent(tokenToMatchStr)
+            }
+          }
         }
       }
     }
+    
+    tokens.toSeq // return immutable sequence
   }
 }
 

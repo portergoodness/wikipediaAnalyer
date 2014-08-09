@@ -8,6 +8,7 @@ import org.junit.runner._
 import play.api.test._
 import play.api.test.Helpers._
 import wiki.parser.WikiParser
+import scala.io.Source
 
 /**
  * Spec to test WikiParser
@@ -114,6 +115,12 @@ class WikiParserSpec extends Specification {
       val link = parseResults.get(0)
       link.rawContent must equalTo(expectedLinkRaw)
       
+    }
+    
+    "parse x-wiki content" in {
+      val content = Source.fromInputStream(getClass.getResourceAsStream("jimmyFallonContent.txt")).mkString
+      val parseResults = WikiParser().parse(content)
+      parseResults.isDefined must beTrue
     }
     
   }
